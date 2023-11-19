@@ -4,6 +4,7 @@ namespace GALIAIS\Flysystem\IPFS;
 use Exception;
 use Ipfs\Ipfs;
 use Generator;
+use Ipfs\Drivers\HttpClient;
 use Ipfs\IpfsException;
 use League\Flysystem\Config;
 use JetBrains\PhpStorm\Pure;
