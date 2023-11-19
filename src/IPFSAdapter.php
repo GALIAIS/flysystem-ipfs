@@ -118,9 +118,18 @@ class IPFSAdapter implements FilesystemAdapter
             // 获取文件或目录的时间戳
             return $result['mtime']['secs'];
         } catch (Exception $e) {
-            throw;
+            // 记录异常信息
+            $errorMessage = $e->getMessage();
+            $stackTrace = $e->getTraceAsString();
+
+            // 在日志中记录异常
+            error_log("Exception occurred in getTimestamp: $errorMessage\n$stackTrace");
+
+            // 重新抛出异常
+            throw $e;
         }
     }
+
 
 
     public function setVisibility(string $path, string $visibility): void
@@ -218,7 +227,15 @@ class IPFSAdapter implements FilesystemAdapter
             // 获取文件或目录的大小
             return $result['size'];
         } catch (Exception $e) {
-            throw;
+            // 记录异常信息
+            $errorMessage = $e->getMessage();
+            $stackTrace = $e->getTraceAsString();
+
+            // 在日志中记录异常
+            error_log("Exception occurred in getTimestamp: $errorMessage\n$stackTrace");
+
+            // 重新抛出异常
+            throw $e;
         }
     }
 
