@@ -27,33 +27,12 @@
             "email": "i@galiais.com"
         }
     ],
+    "version": "1.0.0",
     "license": "MIT",
-    "extra": {
-        "hooks": {
-            "pre-commit": [
-                "composer test",
-                "composer check-style"
-            ],
-            "pre-push": [
-                "composer test",
-                "composer check-style"
-            ]
-        }
-    },
     "scripts": {
-        "post-merge": "composer install",
-        "post-install-cmd": [
-            "cghooks add --ignore-lock",
-            "cghooks update"
-        ],
-        "cghooks": "vendor/bin/cghooks",
-        "check-style": "php-cs-fixer fix --using-cache=no --diff --dry-run --ansi",
-        "fix-style": "php-cs-fixer fix --using-cache=no --ansi",
         "test": "vendor/bin/phpunit"
     },
     "scripts-descriptions": {
-        "test": "Run all tests.",
-        "check-style": "Run style checks (only dry run - no fixing!).",
-        "fix-style": "Run style checks and fix violations."
+        "test": "Run all tests."
     }
 }
