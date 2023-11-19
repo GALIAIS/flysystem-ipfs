@@ -63,6 +63,7 @@ class IPFSAdapter implements FilesystemAdapter
 
     public function visibility(string $path): FileAttributes
     {
+        throw UnableToRetrieveMetadata::visibility($path);
     }
 
     public function directoryExists(string $path): bool
@@ -81,20 +82,104 @@ class IPFSAdapter implements FilesystemAdapter
         }
     }
 
-    public function has(string $path)
-    {
-    }
-
     public function mimeType(string $path): FileAttributes
     {
+        $mimetype = $this->getMimetype($path);
+
+        if (! $mimetype) {
+            throw UnableToRetrieveMetadata::mimeType($path);
+        }
+
+        return new FileAttributes($path, mimeType: $mimetype);
     }
+
+    public function getMimetype(string $path): string
+    {
+        try {
+            // Add the file to IPFS and get its CID
+            $result = $this->client()->add($path);
+            $cid = $result['Hash'];
+
+            // Get the file's MIME type from IPFS
+            return $this->client()->stat($cid);
+        } catch (Exception $e) {
+            // Handle the exception
+            return 'Unknown';
+        }
+    }
+
+    public function getTimestamp(string $path): string
+    {
+        try {
+            // 获取文件或目录的 hash 值
+            $hash = $this->client()->add($path);
+            $cid = $hash['Hash'];
+            // 获取文件或目录的元数据
+            $result = $this->client()->stat($cid);
+            // 获取文件或目录的时间戳
+            return $result['mtime']['secs'];
+        } catch (Exception $e) {
+            throw;
+        }
+    }
+
 
     public function setVisibility(string $path, string $visibility): void
     {
+        throw UnableToSetVisibility::atLocation($path);
     }
 
     public function listContents(string $path, bool $deep): iterable
     {
+        $list = [];
+
+        try {
+            // 获取文件或目录的 hash 值
+            $hash = $this->client()->add($path);
+            $cid = $hash['Hash'];
+            // 列出文件或目录的内容
+            $result = $this->client()->ls($cid);
+            foreach ($result as $files) {
+                // 将文件或目录的信息添加到列表中
+                $list[] = $this->normalizeFileInfo($files, $path);
+                // 如果是目录并且需要递归地列出内容，获取子目录的 hash 值并重复上述操作
+                if ($files['type'] == 'directory' && $deep) {
+                    $subhash = $files['hash'];
+                    $list = array_merge($list, (array)$this->listContents($subhash, true));
+                }
+            }
+        } catch (\Exception $e) {
+            return [];
+        }
+
+        return $list;
+    }
+
+    #[Pure]
+    protected function normalizeFileInfo(array $stats, string $directory): FileAttributes
+    {
+        // 获取文件或目录的路径
+        $filePath = ltrim($directory . '/' . $stats['name'], '/');
+        // 获取文件或目录的 hash 值
+        $hash = $stats['hash'];
+        // 获取文件或目录的大小
+        $size = $stats['size'];
+        // 获取文件或目录的类型
+        $type = $stats['type'];
+        // 获取文件或目录的时间戳
+        $timestamp = $stats['mtime']['secs'];
+        // 获取文件或目录的 MIME 类型
+        $mimetype = $this->getMimetype($filePath);
+
+        // 创建一个 FileAttributes 对象
+        return new FileAttributes(
+            $filePath,
+            $size,
+            $type,
+            $timestamp,
+            $mimetype,
+            $hash
+        );
     }
 
     public function write(string $path, string $contents, Config $config): void
@@ -112,38 +197,30 @@ class IPFSAdapter implements FilesystemAdapter
     public function writeStream(string $path, $contents, Config $config): void
     {
         try {
-            $ipfsClient = $this->client();
-        } catch (Exception $e) {
-        }
-        $tempFile = tempnam(sys_get_temp_dir(), 'ipfs');
-
-        // 将流式数据写入临时文件
-        $stream = fopen($tempFile, 'w');
-        while (!feof($contents)) {
-            fwrite($stream, fread($contents, 1024));
-        }
-        fclose($stream);
-
-        try {
-            // 使用 IPFS 客户端将临时文件添加到 IPFS
-            $result = $this->client()->add($tempFile);
+            // use IPFS client to add resource stream to IPFS
+            $result = $this->client()->add($contents);
             $ipfsHash = $result['Hash'];
 
-            // 删除临时文件
-            unlink($tempFile);
-
-            // 将 IPFS 哈希写入指定路径
+            // write IPFS hash to specified path
             $this->write($path, $ipfsHash, $config);
         } catch (Exception $e) {
-            // 删除临时文件（如果添加到 IPFS 失败）
-            unlink($tempFile);
-
             throw UnableToWriteFile::atLocation($path, $e->getMessage());
         }
     }
 
     public function fileSize(string $path): FileAttributes
     {
+        try {
+            // 获取文件或目录的 hash 值
+            $hash = $this->client()->add($path);
+            $cid = $hash['Hash'];
+            // 获取文件或目录的元数据
+            $result = $this->client()->stat($cid);
+            // 获取文件或目录的大小
+            return $result['size'];
+        } catch (\Exception $e) {
+            throw;
+        }
     }
 
     public function read(string $path): string
@@ -171,22 +248,59 @@ class IPFSAdapter implements FilesystemAdapter
 
     public function createDirectory(string $path, Config $config): void
     {
+        try {
+            $result = $this->client()->addFromPath($path);
+            // 获取 hash 值
+            $hash = $result['Hash'];
+            // 将 hash 值固定到 ipfs 节点上
+            $this->client()->pinAdd($hash);
+        } catch (Exception $e) {
+            throw UnableToCreateDirectory::atLocation($path, $e->getMessage());
+        }
     }
 
     public function lastModified(string $path): FileAttributes
     {
+        try {
+            // 获取文件或目录的 hash 值
+            $hash = $this->client()->add($path);
+            $cid = $hash['Hash'];
+            // 获取文件或目录的元数据
+            $result = $this->client()->stat($cid);
+            // 获取文件或目录的最后修改时间
+            $lastModified = $result['mtime']['secs'];
+            // 创建一个 FileAttributes 对象
+            return new FileAttributes($path, lastModified: $lastModified);
+        } catch (\Exception $e) {
+            throw UnableToRetrieveMetadata::lastModified($path);
+        }
     }
 
     public function copy(string $source, string $destination, Config $config): void
     {
+        try {
+            $sourceHash = $source; // use hash as source path
+            $destinationHash = $destination; // use hash as destination path
+            $this->client()->pinAdd($sourceHash); // pin source file to IPFS network
+            // save source file to destination path in your local or cloud storage
+        } catch (Exception $e) {
+            throw UnableToCopyFile::fromLocationTo($source, $destination);
+        }
     }
 
     public function delete(string $path): void
     {
+        try {
+            $hash = $path; // use hash as path
+            $this->client()->pinRm($hash); // unpin file from IPFS network
+            // delete file from your local or cloud storage
+        } catch (Exception $e) {
+            throw UnableToDeleteFile::atLocation($path, $e->getMessage());
+        }
     }
 
     public function deleteDirectory(string $path): void
     {
-
+        $this->delete($path);
     }
 }
