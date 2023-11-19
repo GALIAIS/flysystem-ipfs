@@ -23,7 +23,7 @@ class IPFSAdapter implements FilesystemAdapter
 
     public function __construct(
         protected string $gatewayHost,
-        protected string $ApiHost,
+        protected string $apiHost,
     ){
     }
 
@@ -38,7 +38,7 @@ class IPFSAdapter implements FilesystemAdapter
     protected function client(): IPFS
     {
         if (is_null($this->client)) {
-            $config = new IPFS($this->gatewayHost, $this->ApiHost);
+            $config = new IPFS($this->gatewayHost, $this->apiHost);
             $this->client = new IPFS($config);
         }
 
