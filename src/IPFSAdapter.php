@@ -2,6 +2,7 @@
 
 namespace GALIAIS\Flysystem\IPFS;
 
+use Exception;
 use League\Flysystem\Config;
 use JetBrains\PhpStorm\Pure;
 use League\Flysystem\FileAttributes;
@@ -19,31 +20,58 @@ use GuzzleHttp\Client;
 
 class IPFSAdapter implements FilesystemAdapter
 {
-    protected string $client;
+    protected ?IPFS $client = null;
+    private $ipfsClient;
 
     public function __construct(
         protected string $gateway,
-    )
+        protected string $http_api,
+    ){
+    }
+
+    public function setClient(IPFS $client): void
+    {
+        $this->client = $client;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function client(): IPFS
+    {
+        if ($this->client === null) {
+            throw new Exception("IPFS client is not set.");
+        }
+
+        return $this->client;
+    }
+
+
+    public function move(string $source, string $destination, Config $config): void
     {
     }
 
-    public function move($source, $destination, $config): void
+    public function visibility(string $path): FileAttributes
     {
     }
 
-    public function visibility($path): FileAttributes
+    public function directoryExists(string $path): bool
     {
-    }
-
-    public function directoryExists($path): bool
-    {
+        return $this->fileExists($path);
     }
 
     public function fileExists(string $path): bool
     {
+        try {
+            $ipfsClient = $this->client();
+            $ipfsClient->cat($path);
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
-    public function has($path)
+    public function has(string $path)
     {
     }
 
@@ -61,29 +89,59 @@ class IPFSAdapter implements FilesystemAdapter
 
     public function write(string $path, string $contents, Config $config): void
     {
-
+        try {
+            $this->client()->add($contents);
+        } catch (Exception $e) {
+            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+        }
     }
 
-    public function writeStream(string $path, $contents, $config): void
+    public function writeStream(string $path, $contents, Config $config): void
+    {
+        try {
+            $ipfsClient = $this->client();
+        } catch (Exception $e) {
+        }
+        $tempFile = tempnam(sys_get_temp_dir(), 'ipfs');
+
+        // 将流式数据写入临时文件
+        $stream = fopen($tempFile, 'w');
+        while (!feof($contents)) {
+            fwrite($stream, fread($contents, 1024));
+        }
+        fclose($stream);
+
+        try {
+            // 使用 IPFS 客户端将临时文件添加到 IPFS
+            $result = $this->client()->add($tempFile);
+            $ipfsHash = $result['Hash'];
+
+            // 删除临时文件
+            unlink($tempFile);
+
+            // 将 IPFS 哈希写入指定路径
+            $this->write($path, $ipfsHash, $config);
+        } catch (Exception $e) {
+            // 删除临时文件（如果添加到 IPFS 失败）
+            unlink($tempFile);
+
+            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+        }
+    }
+
+    public function fileSize(string $path): FileAttributes
     {
     }
 
-    public function fileSize($path): FileAttributes
+    public function read(string $path): string
     {
     }
 
-    public function read($path): string
-    {
-        $response = $this->client->get('cat/' . $path);
-
-        return (string)$response->getBody();
-    }
-
-    public function readStream($path)
+    public function readStream(string $path)
     {
     }
 
-    public function createDirectory($path, $config): void
+    public function createDirectory(string $path, Config $config): void
     {
     }
 
@@ -91,15 +149,15 @@ class IPFSAdapter implements FilesystemAdapter
     {
     }
 
-    public function copy($source, $destination, $config): void
+    public function copy(string $source, string $destination, Config $config): void
     {
     }
 
-    public function delete($path): void
+    public function delete(string $path): void
     {
     }
 
-    public function deleteDirectory($path): void
+    public function deleteDirectory(string $path): void
     {
 
     }
