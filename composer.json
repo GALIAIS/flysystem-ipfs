@@ -3,7 +3,8 @@
     "description": "Flysystem adapter for the IPFS.",
     "require": {
         "league/flysystem": "^3.0",
-        "cloutier/php-ipfs-api": "^0.0.6"
+        "cloutier/php-ipfs-api": "^0.0.6",
+        "guzzlehttp/guzzle": "^7.8.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",

@@ -9,15 +9,15 @@
 # Installation
 
 ```shell
-$ composer require "overtrue/flysystem-qiniu"
+$ composer require "GALIAIS/flysystem-ipfs"
 ```
 
 # Usage
 
 ```php
 use League\Flysystem\Filesystem;
-use Overtrue\Flysystem\Qiniu\QiniuAdapter;
-use Overtrue\Flysystem\Qiniu\Plugins\FetchFile;
+use GALIAIS\Flysystem\IPFS\IPFSAdapter;
+use GALIAIS\Flysystem\IPFS\Plugins\FetchFile;
 
 $accessKey = 'xxxxxx';
 $secretKey = 'xxxxxx';

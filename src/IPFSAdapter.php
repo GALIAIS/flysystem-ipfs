@@ -3,62 +3,104 @@
 namespace GALIAIS\Flysystem\IPFS;
 
 use League\Flysystem\Config;
-use League\Flysystem\Adapter\AbstractAdapter;
+use JetBrains\PhpStorm\Pure;
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\UnableToCopyFile;
+use League\Flysystem\UnableToCreateDirectory;
+use League\Flysystem\UnableToDeleteFile;
+use League\Flysystem\UnableToMoveFile;
+use League\Flysystem\UnableToReadFile;
+use League\Flysystem\UnableToRetrieveMetadata;
+use League\Flysystem\UnableToSetVisibility;
+use League\Flysystem\UnableToWriteFile;
 use Cloutier\PhpIpfsApi\IPFS;
 use GuzzleHttp\Client;
 
-class IPFSAdapter extends AbstractAdapter
+class IPFSAdapter implements FilesystemAdapter
 {
     protected string $client;
 
     public function __construct(
         protected string $gateway,
-    ){
+    )
+    {
     }
 
-    public function write($path, $contents, Config $config)
+    public function move($source, $destination, $config): void
     {
-        $response = $this->client->post('add', [
-            'multipart' => [
-                [
-                    'name' => 'file',
-                    'contents' => $contents,
-                    'filename' => $path
-                ]
-            ]
-        ]);
-
-        $body = json_decode($response->getBody(), true);
-
-        return $body['Hash'];
     }
 
-    public function read($path)
+    public function visibility($path)
     {
-        $response = $this->client->get('cat/' . $path);
-
-        return (string) $response->getBody();
     }
 
-    public function delete($path)
+    public function directoryExists($path)
     {
-        $response = $this->client->get('pin/rm/' . $path);
+    }
 
-        return $response->getStatusCode() === 200;
+    public function fileExists(string $path): bool
+    {
     }
 
     public function has($path)
     {
-        $response = $this->client->get('pin/ls');
+    }
 
-        $body = json_decode($response->getBody(), true);
+    public function mimeType(string $path): FileAttributes
+    {
+    }
 
-        foreach ($body['Keys'] as $key) {
-            if ($key['Name'] === $path) {
-                return true;
-            }
-        }
+    public function setVisibility(string $path, string $visibility): void
+    {
+    }
 
-        return false;
+    public function listContents(string $path, bool $deep): iterable
+    {
+    }
+
+    public function write(string $path, string $contents, Config $config)
+    {
+
+    }
+
+    public function writeStream(string $path, $contents, $config): void
+    {
+    }
+
+    public function fileSize($path): FileAttributes
+    {
+    }
+
+    public function read($path): string
+    {
+        $response = $this->client->get('cat/' . $path);
+
+        return (string)$response->getBody();
+    }
+
+    public function readStream($path)
+    {
+    }
+
+    public function createDirectory($path, $config): void
+    {
+    }
+
+    public function lastModified(string $path): FileAttributes
+    {
+    }
+
+    public function copy($source, $destination, $config): void
+    {
+    }
+
+    public function delete($path): void
+    {
+    }
+
+    public function deleteDirectory($path): void
+    {
+
     }
 }
