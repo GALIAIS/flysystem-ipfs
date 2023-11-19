@@ -15,17 +15,16 @@ use League\Flysystem\UnableToReadFile;
 use League\Flysystem\UnableToRetrieveMetadata;
 use League\Flysystem\UnableToSetVisibility;
 use League\Flysystem\UnableToWriteFile;
-use Cloutier\PhpIpfsApi\IPFS;
+use chenjia404\PhpIpfsApi\IPFS;
 use GuzzleHttp\Client;
 
 class IPFSAdapter implements FilesystemAdapter
 {
     protected ?IPFS $client = null;
-    private $ipfsClient;
 
     public function __construct(
-        protected string $gateway,
-        protected string $http_api,
+        protected string $gatewayHost,
+        protected string $ApiHost,
     ){
     }
 
@@ -37,10 +36,11 @@ class IPFSAdapter implements FilesystemAdapter
     /**
      * @throws Exception
      */
-    public function client(): IPFS
+    protected function client(): IPFS
     {
-        if ($this->client === null) {
-            throw new Exception("IPFS client is not set.");
+        if (is_null($this->client)) {
+            $config = new IPFS($this->gatewayHost, $this->ApiHost);
+            $this->client = new IPFS($config);
         }
 
         return $this->client;
@@ -49,6 +49,16 @@ class IPFSAdapter implements FilesystemAdapter
 
     public function move(string $source, string $destination, Config $config): void
     {
+        try {
+            $sourceHash = $source; // use hash as source path
+            $destinationHash = $destination; // use hash as destination path
+            $this->client()->pinRm($sourceHash); // unpin source file from IPFS network
+            // delete source file from your local or cloud storage
+            $this->client()->pinAdd($destinationHash); // pin destination file to IPFS network
+            // save destination file to your local or cloud storage
+        } catch (Exception $e) {
+            throw UnableToMoveFile::fromLocationTo($source, $destination);
+        }
     }
 
     public function visibility(string $path): FileAttributes
@@ -90,9 +100,12 @@ class IPFSAdapter implements FilesystemAdapter
     public function write(string $path, string $contents, Config $config): void
     {
         try {
-            $this->client()->add($contents);
+            $hash = $this->client()->add($contents); // upload file to IPFS and get hash
+            $path = $hash; // use hash as path
+            // save path and other metadata to your local or cloud storage
+            return;
         } catch (Exception $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            throw UnableToWriteFile::atLocation($path, $e->getMessage(), $e);
         }
     }
 
@@ -135,10 +148,25 @@ class IPFSAdapter implements FilesystemAdapter
 
     public function read(string $path): string
     {
+        try {
+            $hash = $path; // 使用hash值作为路径
+            return $this->client()->cat($hash); // get file content from IPFS by hash
+        } catch (Exception $e) {
+            throw UnableToReadFile::fromLocation($path);
+        }
     }
 
     public function readStream(string $path)
     {
+        try {
+            $hash = $path; // use hash as path
+            $stream = tmpfile();
+            fwrite($stream, $this->client()->cat($hash)); // get file content from IPFS by hash
+            rewind($stream);
+            return $stream;
+        } catch (Exception $e) {
+            throw UnableToReadFile::fromLocation($path);
+        }
     }
 
     public function createDirectory(string $path, Config $config): void

@@ -3,7 +3,7 @@
     "description": "Flysystem adapter for the IPFS.",
     "require": {
         "league/flysystem": "^3.0",
-        "cloutier/php-ipfs-api": "^0.0.6",
+        "chenjia404/php-ipfs-api": "dev-master",
         "guzzlehttp/guzzle": "^7.8.0"
     },
     "require-dev": {
@@ -41,9 +41,6 @@
         }
     },
     "scripts": {
-        "post-update-cmd": [
-            "cghooks update"
-        ],
         "post-merge": "composer install",
         "post-install-cmd": [
             "cghooks add --ignore-lock",
