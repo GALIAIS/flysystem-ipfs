@@ -20,10 +20,9 @@ use League\Flysystem\UnableToWriteFile;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToSetVisibility;
-use Cloutier\PhpIpfsApi\IPFS;
 use GuzzleHttp\Client;
 use Mockery;
-use GALIAIS\Flysystem\IPFS\IPFSAdapter;
+use GALIAIS\Flysystem\IPFS\IPFSAdapter1;
 use PHPUnit\Framework\TestCase;
 
 
@@ -34,7 +33,7 @@ class IPFSAdapterTest extends TestCase
 {
     public function IPFSProvider()
     {
-        $adapter = Mockery::mock(IPFSAdapter::class, ['serviceName', 'operatorName', 'password', 'domain'])
+        $adapter = Mockery::mock(IPFSAdapter1::class, ['serviceName', 'operatorName', 'password', 'domain'])
             ->makePartial()
             ->shouldAllowMockingProtectedMethods();
 

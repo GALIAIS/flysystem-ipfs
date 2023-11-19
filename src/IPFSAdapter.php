@@ -3,6 +3,9 @@
 namespace GALIAIS\Flysystem\IPFS;
 
 use Exception;
+use Ipfs\Ipfs;
+use Generator;
+use Ipfs\IpfsException;
 use League\Flysystem\Config;
 use JetBrains\PhpStorm\Pure;
 use League\Flysystem\FileAttributes;
@@ -15,48 +18,47 @@ use League\Flysystem\UnableToReadFile;
 use League\Flysystem\UnableToRetrieveMetadata;
 use League\Flysystem\UnableToSetVisibility;
 use League\Flysystem\UnableToWriteFile;
-use chenjia404\PhpIpfsApi\IPFS;
+/*use chenjia404\PhpIpfsApi\IPFS;*/
+use League\Flysystem\DirectoryAttributes;
+use League\Flysystem\PathPrefixer;
+use League\Flysystem\UnableToDeleteDirectory;
+use League\Flysystem\Visibility;
+use League\MimeTypeDetection\FinfoMimeTypeDetector;
+use League\MimeTypeDetection\MimeTypeDetector;
 
 class IPFSAdapter implements FilesystemAdapter
 {
-    protected ?IPFS $client = null;
+    protected IPFS $client;
+    protected PathPrefixer $prefixer;
+    protected MimeTypeDetector $mimeTypeDetector;
 
     public function __construct(
         protected string $gatewayHost,
         protected string $apiHost,
+        IPFS $client,
+        string $prefix = '',
+        MimeTypeDetector $mimeTypeDetector = null
     ){
-    }
-
-    public function setClient(IPFS $client): void
-    {
         $this->client = $client;
+        $this->prefixer = new PathPrefixer($prefix);
+        $this->mimeTypeDetector = $mimeTypeDetector ?: new FinfoMimeTypeDetector();
     }
 
-    /**
-     * @throws Exception
-     */
     protected function client(): IPFS
     {
-        if (is_null($this->client)) {
-            $config = new IPFS($this->gatewayHost, $this->apiHost);
-            $this->client = new IPFS($config);
-        }
-
         return $this->client;
     }
 
 
     public function move(string $source, string $destination, Config $config): void
     {
+        $path = $this->applyPathPrefix($source);
+        $newPath = $this->applyPathPrefix($destination);
+
         try {
-            $sourceHash = $source; // use hash as source path
-            $destinationHash = $destination; // use hash as destination path
-            $this->client()->pinRm($sourceHash); // unpin source file from IPFS network
-            // delete source file from your local or cloud storage
-            $this->client()->pinAdd($destinationHash); // pin destination file to IPFS network
-            // save destination file to your local or cloud storage
-        } catch (Exception $e) {
-            throw UnableToMoveFile::fromLocationTo($source, $destination);
+            $this->client()->files()->mv($path, $newPath);
+        } catch (IpfsException $exception) {
+            throw UnableToMoveFile::fromLocationTo($path, $newPath, $exception);
         }
     }
 
@@ -318,5 +320,10 @@ class IPFSAdapter implements FilesystemAdapter
     public function deleteDirectory(string $path): void
     {
         $this->delete($path);
+    }
+
+    protected function applyPathPrefix(string $path): string
+    {
+        return '/'.trim($this->prefixer->prefixPath($path), '/');
     }
 }
