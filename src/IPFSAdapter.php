@@ -31,11 +31,11 @@ class IPFSAdapter implements FilesystemAdapter
     {
     }
 
-    public function visibility($path)
+    public function visibility($path): FileAttributes
     {
     }
 
-    public function directoryExists($path)
+    public function directoryExists($path): bool
     {
     }
 
@@ -59,7 +59,7 @@ class IPFSAdapter implements FilesystemAdapter
     {
     }
 
-    public function write(string $path, string $contents, Config $config)
+    public function write(string $path, string $contents, Config $config): void
     {
 
     }
