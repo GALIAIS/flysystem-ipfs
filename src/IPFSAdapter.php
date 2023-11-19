@@ -16,7 +16,6 @@ use League\Flysystem\UnableToRetrieveMetadata;
 use League\Flysystem\UnableToSetVisibility;
 use League\Flysystem\UnableToWriteFile;
 use chenjia404\PhpIpfsApi\IPFS;
-use GuzzleHttp\Client;
 
 class IPFSAdapter implements FilesystemAdapter
 {
@@ -148,7 +147,7 @@ class IPFSAdapter implements FilesystemAdapter
                     $list = array_merge($list, (array)$this->listContents($subhash, true));
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [];
         }
 
@@ -218,7 +217,7 @@ class IPFSAdapter implements FilesystemAdapter
             $result = $this->client()->stat($cid);
             // 获取文件或目录的大小
             return $result['size'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw;
         }
     }
@@ -271,7 +270,7 @@ class IPFSAdapter implements FilesystemAdapter
             $lastModified = $result['mtime']['secs'];
             // 创建一个 FileAttributes 对象
             return new FileAttributes($path, lastModified: $lastModified);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw UnableToRetrieveMetadata::lastModified($path);
         }
     }
