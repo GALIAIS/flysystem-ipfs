@@ -118,6 +118,7 @@ class IPFSAdapter implements FilesystemAdapter
             $cid = $hash['Hash'];
             // 获取文件或目录的元数据
             $result = $this->client()->stat($cid);
+
             // 获取文件或目录的时间戳
             return $result['mtime']['secs'];
         } catch (Exception $e) {
@@ -208,11 +209,21 @@ class IPFSAdapter implements FilesystemAdapter
     public function writeStream(string $path, $contents, Config $config): void
     {
         try {
-            $contents = stream_get_contents($contents); // get file content from stream
-            $hash = $this->client()->add($contents); // upload file to IPFS and get hash
-            $path = $hash; // use hash as path
+            // Get file content from stream
+            $contents = stream_get_contents($contents);
+
+            // Upload file to IPFS and get response
+            $response = $this->client()->add($contents);
+
+            // Check if CID (Hash) exists in the response
+            if (isset($response['Hash'])) {
+                $cid = $response['Hash']; // Get CID from the array
+                $path = $cid; // Use CID as path
+            } else {
+                throw new Exception('Unable to retrieve CID from IPFS response.');
+            }
         } catch (Exception $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            throw new UnableToWriteFile($path, $e->getMessage());
         }
     }
 
@@ -315,9 +326,11 @@ class IPFSAdapter implements FilesystemAdapter
         }
     }
 
+
     public function deleteDirectory(string $path): void
     {
         $this->delete($path);
     }
+
 
 }
