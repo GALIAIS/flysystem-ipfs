@@ -100,7 +100,7 @@ class IPFSAdapter1 implements FilesystemAdapter
 
         try {
             $result = $this->client->add([
-                [$location, null, $contents],
+                [$location, null, $contents, null],
             ], $config->get('pin', false));
 
             try {
