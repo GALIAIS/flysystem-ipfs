@@ -208,12 +208,9 @@ class IPFSAdapter implements FilesystemAdapter
     public function writeStream(string $path, $contents, Config $config): void
     {
         try {
-            // use IPFS client to add resource stream to IPFS
-            $result = $this->client()->add($path);
-            $ipfsHash = $result['Hash'];
-
-            // write IPFS hash to specified path
-            $this->write($path, $ipfsHash, $config);
+            $contents = stream_get_contents($contents); // get file content from stream
+            $hash = $this->client()->add($contents); // upload file to IPFS and get hash
+            $path = $hash; // use hash as path
         } catch (Exception $e) {
             throw UnableToWriteFile::atLocation($path, $e->getMessage());
         }
