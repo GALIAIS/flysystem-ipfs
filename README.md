@@ -16,10 +16,10 @@ $ composer require "GALIAIS/flysystem-ipfs"
 
 ```php
 use League\Flysystem\Filesystem;
-use GALIAIS\Flysystem\IPFS\IPFSAdapter1;
+use GALIAIS\Flysystem\IPFS\IPFSAdapter;
 
 $gatewayHost = 'http://localhost:8080';
-$ApiHost = 'http://localhost:5001';
+$apiHost = 'http://localhost:5001';
 
 $adapter = new IPFS($this->gatewayHost, $this->apiHost);
 
