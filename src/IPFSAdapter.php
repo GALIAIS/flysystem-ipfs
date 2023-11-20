@@ -34,8 +34,17 @@ class IPFSAdapter implements FilesystemAdapter
     ){
     }
 
+    public function setClient(IPFS $client): void
+    {
+        $this->client = $client;
+    }
+
     protected function client(): IPFS
     {
+        if (is_null($this->client)) {
+            $config = new IPFS($this->gatewayHost, $this->apiHost);
+            $this->client = new IPFS($config);
+        }
         return $this->client;
     }
 
