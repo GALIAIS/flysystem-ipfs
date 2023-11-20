@@ -196,7 +196,7 @@ class IPFSAdapter implements FilesystemAdapter
     public function write(string $path, string $contents, Config $config): void
     {
         try {
-            $hash = $this->client()->add($contents); // upload file to IPFS and get hash
+            $hash = $this->client()->add($path); // upload file to IPFS and get hash
             $path = $hash; // use hash as path
             // save path and other metadata to your local or cloud storage
             return;
@@ -209,7 +209,7 @@ class IPFSAdapter implements FilesystemAdapter
     {
         try {
             // use IPFS client to add resource stream to IPFS
-            $result = $this->client()->add($contents);
+            $result = $this->client()->add($path);
             $ipfsHash = $result['Hash'];
 
             // write IPFS hash to specified path
