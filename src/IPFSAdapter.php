@@ -26,14 +26,12 @@ use League\MimeTypeDetection\MimeTypeDetector;
 
 class IPFSAdapter implements FilesystemAdapter
 {
-    protected IPFS $client;
+    protected ?IPFS $client = null;
 
     public function __construct(
         protected string $gatewayHost,
         protected string $apiHost,
-        IPFS $client,
     ){
-        $this->client = $client;
     }
 
     protected function client(): IPFS
@@ -316,8 +314,4 @@ class IPFSAdapter implements FilesystemAdapter
         $this->delete($path);
     }
 
-    protected function applyPathPrefix(string $path): string
-    {
-        return '/'.trim($this->prefixer->prefixPath($path), '/');
-    }
 }
