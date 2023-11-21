@@ -363,7 +363,6 @@ class IPFSAdapter implements FilesystemAdapter
         $multicodecPrefix = '70'; // 哈希值前缀为70（32个字节的哈希值长度）
 
         // 使用Base58对象的encode()方法对哈希值进行编码
-        // 在CID前面添加IPFS协议前缀
         return $multibasePrefix . $base58->encode(hex2bin($multicodecPrefix . bin2hex($hash)));
     }
 
