@@ -32,7 +32,7 @@
             "email": "z67x8c99b@gmail.com"
         }
     ],
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "scripts": {
         "test": "vendor/bin/phpunit"
