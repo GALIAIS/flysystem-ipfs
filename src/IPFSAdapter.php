@@ -28,7 +28,7 @@ use League\MimeTypeDetection\MimeTypeDetector;
 class IPFSAdapter implements FilesystemAdapter
 {
     protected ?IPFS $client = null;
-
+    private string $cid;
     public function __construct(
         protected string $gatewayHost,
         protected string $apiHost,
@@ -210,22 +210,25 @@ class IPFSAdapter implements FilesystemAdapter
     public function writeStream(string $path, $contents, Config $config): void
     {
         try {
-            // Get file content from stream
             $contents = stream_get_contents($contents);
 
-            // Upload file to IPFS and get response
-            $response = $this->client()->add($contents);
+            $response = $this->client->add($contents);
 
-            // Check if CID (Hash) exists in the response
-            if (isset($response['Hash'])) {
-                $cid = $response['Hash']; // Get CID from the array
-                $path = $cid; // Use CID as path
+            if ($response !== false) {
+                $result = json_decode($response, true);
+                $ipfs_hash = $result['Hash'];
+                $this->cid = $ipfs_hash; // 将获取的 CID 存储到类属性中
             } else {
                 throw new Exception('Unable to retrieve CID from IPFS response.');
             }
         } catch (Exception $e) {
             throw new UnableToWriteFile($path, $e->getMessage());
         }
+    }
+
+    public function getCid(): ?string
+    {
+        return $this->cid;
     }
 
     public function fileSize(string $path): FileAttributes
@@ -326,7 +329,6 @@ class IPFSAdapter implements FilesystemAdapter
             throw UnableToDeleteFile::atLocation($path, $e->getMessage());
         }
     }
-
 
     public function deleteDirectory(string $path): void
     {
