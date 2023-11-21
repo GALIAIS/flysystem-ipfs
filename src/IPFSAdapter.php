@@ -4,6 +4,7 @@ namespace GALIAIS\Flysystem\IPFS;
 
 use Exception;
 use Generator;
+use Tuupola\Base58;
 use League\Flysystem\Config;
 use JetBrains\PhpStorm\Pure;
 use League\Flysystem\FileAttributes;
