@@ -4,6 +4,7 @@ namespace GALIAIS\Flysystem\IPFS;
 
 use Exception;
 use Generator;
+use SodiumException;
 use Tuupola\Base58;
 use Tuupola\Base32;
 use League\Flysystem\Config;
@@ -354,7 +355,7 @@ class IPFSAdapter implements FilesystemAdapter
         // 使用BLAKE2b-256哈希算法计算文件内容的哈希值
         try {
             $hash = sodium_crypto_generichash($content, '', 32);
-        } catch (\SodiumException $e) {
+        } catch (SodiumException $e) {
         } // 32表示哈希值长度为32字节
 
         // 将哈希值转换为CID格式
