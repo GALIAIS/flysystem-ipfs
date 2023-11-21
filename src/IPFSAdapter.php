@@ -5,6 +5,7 @@ namespace GALIAIS\Flysystem\IPFS;
 use Exception;
 use Generator;
 use Tuupola\Base58;
+use Tuupola\Base32;
 use League\Flysystem\Config;
 use JetBrains\PhpStorm\Pure;
 use League\Flysystem\FileAttributes;
@@ -28,7 +29,9 @@ use League\MimeTypeDetection\MimeTypeDetector;
 class IPFSAdapter implements FilesystemAdapter
 {
     protected ?IPFS $client = null;
-    private string $cid;
+    public string $cid;
+    public string $fileCid;
+
     public function __construct(
         protected string $gatewayHost,
         protected string $apiHost,
@@ -210,14 +213,19 @@ class IPFSAdapter implements FilesystemAdapter
     public function writeStream(string $path, $contents, Config $config): void
     {
         try {
+            // 获取文件内容
             $contents = stream_get_contents($contents);
 
-            $response = $this->client->add($contents);
+            // 上传文件到 IPFS 并获取响应
+            $response = $this->client()->add($contents);
 
-            if ($response !== false) {
-                $result = json_decode($response, true);
-                $ipfs_hash = $result['Hash'];
-                $this->cid = $ipfs_hash; // 将获取的 CID 存储到类属性中
+            // 检查响应中是否存在 Hash 键
+            if (isset($response['Hash'])) {
+                // 获取 CID
+                $this->fileCid = $response['Hash'];
+                // 使用 CID 作为路径
+                $fileCid = $this->fileCid;
+                $path = $fileCid;
             } else {
                 throw new Exception('Unable to retrieve CID from IPFS response.');
             }
@@ -335,5 +343,28 @@ class IPFSAdapter implements FilesystemAdapter
         $this->delete($path);
     }
 
+    public function cid_file($content): string
+    {
+        // 创建一个Base58对象，使用GMP字符集和Base32编码
+        $base58 = new Base58([
+            "characters" => Base58::GMP,
+            "encoding" => Base32::RFC4648
+        ]);
+
+        // 使用BLAKE2b-256哈希算法计算文件内容的哈希值
+        try {
+            $hash = sodium_crypto_generichash($content, '', 32);
+        } catch (\SodiumException $e) {
+        } // 32表示哈希值长度为32字节
+
+        // 将哈希值转换为CID格式
+        $cidVersion = 1; // CID版本为1
+        $multibasePrefix = 'b'; // Base32编码前缀为b
+        $multicodecPrefix = '70'; // 哈希值前缀为70（32个字节的哈希值长度）
+
+        // 使用Base58对象的encode()方法对哈希值进行编码
+        // 在CID前面添加IPFS协议前缀
+        return $multibasePrefix . $base58->encode(hex2bin($multicodecPrefix . bin2hex($hash)));
+    }
 
 }

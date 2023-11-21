@@ -10,7 +10,8 @@
         "tuupola/base85": "2.x-dev",
         "tuupola/base62": "3.x-dev",
         "tuupola/base32": "2.x-dev",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "ext-sodium": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
